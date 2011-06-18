@@ -1,0 +1,58 @@
+### Easy Templating Language for PHP
+
+Why have another template language?  Why not?  Everyone has different tastes for how to set up rapid-php development, and here is mine.
+
+The reason I do it this way is that I don't like the creep of control functionality into HTML pages.  Things like codeigniter allow php in templates, and the temptation is always going to be there to put a little more php code in the template, till the line becomes totally blurred.  Smarty doesn't promote putting php in the template, but it compensates by giving the template writer too many features.  If you want to upper case a string, for instance, I think that should happen in the php, not the template.
+
+Another reason I do it this way is that it's simple.  This templating language has virtually no features.  You can insert variables, use single-depth control flow, and loop through rows from a database or other source.  That's it.
+
+If you want to do a nested loop, the best way to do it is with a second template object.  It seems awkward, but I like it, because it forces me to break things down into small, re-usable pieces.  
+
+### Usage:
+
+Here's an example template:
+
+    <html>
+    <title>{etl: title}</title>
+    <body>
+    {etl: if loggedIn}Logged In{etl: else loggedIn}
+
+    {etl: loop users}
+        {etl: header users}<ul>{/etl: header users}
+        <li>{etl: firstName} {etl: lastName} {etl: if online}online now{/etl: if online}</li>
+        {etl: footer users}</ul>{/etl: footer users}
+    {/etl: loop users}
+
+    </body>
+    </html>
+
+Here's an example php program to control this template
+
+    <?php
+    include('template.draw.php');
+    $html = new template('templates/example.html');
+    $html->registerVar('example ETL page', 'title');
+
+    if ($userLoggedIn) {
+        $html->registerVar(TRUE, 'loggedIn');
+    }
+    else {
+        $html->registerVar(FALSE, 'loggedIn');
+    }
+
+    $dblink = mysql_connect('127.0.0.1', 'root', '');
+    $sql = "SELECT firstName, lastName, currentlyOn FROM users";
+    $userQ = mysql_query($sql, $dblink);
+    $users = array();
+    while ($user = mysql_fetch_array($userQ)) {
+        $users[] = array('firstName' => $user['firstName'], 'lastName' => $user['lastName'], 'online' => $user['currentlyOn']);
+    }
+
+    $html->registerLoop($users, 'users');
+
+    $html->printToServer();
+    ?>
+
+### future features
+
+* template creator should allow templates to be stored in memcache, with failover to filesystem
